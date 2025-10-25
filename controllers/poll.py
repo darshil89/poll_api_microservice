@@ -2,17 +2,18 @@ from prisma import Prisma
 from fastapi import HTTPException, status
 from dotenv import load_dotenv
 from models.poll import Poll, Option, Vote, Like
+from typing import Dict, Any
 load_dotenv()
 
 
-async def create_poll(poll: Poll):
+async def create_poll(poll: Poll, current_user: Dict[str, Any]):
     prisma = Prisma()
     try:
         await prisma.connect()
         created_poll = await prisma.poll.create(
             data= {
                 "question": poll.question,
-                "userId": poll.userId,
+                "userId": current_user["id"],
             }
         )
 

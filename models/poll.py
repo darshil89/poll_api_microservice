@@ -31,7 +31,6 @@ class PollCreate(BaseModel):
 class Poll(BaseModel):
     id: Optional[str] = None
     question: str
-    userId: str
     options: Optional[List[Option]] = None
     votes: Optional[List[Vote]] = None
     likes: Optional[List[Like]] = None

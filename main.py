@@ -2,7 +2,7 @@ from fastapi import FastAPI, Depends
 from dotenv import load_dotenv
 import os
 import uvicorn
-from routes.poll import router as poll_router
+from router.poll import router as poll_router
 from helpers.db import check_db_connection
 load_dotenv()
 

@@ -11,15 +11,14 @@ url_prefix = "/api/poll"
 @router.post(f"{url_prefix}/create-poll")
 async def create_poll_route(poll: Poll, current_user: Dict[str, Any] = Depends(get_current_user)):
     try:
-        poll.userId = current_user["id"]
-        return await create_poll(poll)
+        return await create_poll(poll, current_user)
     except HTTPException as e:
         raise e
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
 
-@router.get(f"{url_prefix}/get-poll-by-id/{poll_id}")
-async def get_poll_by_id_route(poll_id: str):
+@router.get(f"{url_prefix}/get-poll-by-id/{{poll_id}}") 
+async def get_poll_by_id_route(poll_id: str, current_user: Dict[str, Any] = Depends(get_current_user)):
     try:
         return await get_poll_by_id(poll_id)
     except HTTPException as e:
@@ -27,7 +26,7 @@ async def get_poll_by_id_route(poll_id: str):
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
 
-@router.get(f"{url_prefix}/get-poll-by-user-id/{user_id}")
+@router.get(f"{url_prefix}/get-poll-by-user-id/{{user_id}}")
 async def get_poll_by_user_id_route(user_id: str, current_user: Dict[str, Any] = Depends(get_current_user)):
     try:
         # Verify user can only access their own polls
@@ -40,7 +39,7 @@ async def get_poll_by_user_id_route(user_id: str, current_user: Dict[str, Any] =
         raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
 
 @router.get(f"{url_prefix}/get-all-polls")
-async def get_all_polls_route():
+async def get_all_polls_route(current_user: Dict[str, Any] = Depends(get_current_user)):
     try:
         return await get_all_polls()
     except HTTPException as e:
