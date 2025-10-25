@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException
-from controllers.poll import create_poll, get_poll_by_id, get_poll_by_user_id, get_all_polls
+from controllers.poll import create_poll, get_poll_by_id, get_poll_by_user_id, get_all_polls, vote_on_poll, like_poll
 from models.poll import Poll, Option, Vote, Like
 from helpers.auth_middleware import get_current_user
 from typing import Dict, Any
@@ -42,6 +42,24 @@ async def get_poll_by_user_id_route(user_id: str, current_user: Dict[str, Any] =
 async def get_all_polls_route(current_user: Dict[str, Any] = Depends(get_current_user)):
     try:
         return await get_all_polls()
+    except HTTPException as e:
+        raise e
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
+
+@router.post(f"{url_prefix}/vote-on-poll/{{poll_id}}/{{option_id}}")
+async def vote_on_poll_route(poll_id: str, option_id: str, current_user: Dict[str, Any] = Depends(get_current_user)):
+    try:
+        return await vote_on_poll(poll_id, option_id, current_user)
+    except HTTPException as e:
+        raise e
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
+
+@router.post(f"{url_prefix}/like-poll/{{poll_id}}")
+async def like_poll_route(poll_id: str, current_user: Dict[str, Any] = Depends(get_current_user)):
+    try:
+        return await like_poll(poll_id, current_user)
     except HTTPException as e:
         raise e
     except Exception as e:

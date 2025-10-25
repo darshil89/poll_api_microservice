@@ -6,6 +6,7 @@ from typing import Dict, Any
 load_dotenv()
 
 
+# create poll
 async def create_poll(poll: Poll, current_user: Dict[str, Any]):
     prisma = Prisma()
     try:
@@ -39,6 +40,7 @@ async def create_poll(poll: Poll, current_user: Dict[str, Any]):
         await prisma.disconnect()
 
 
+# get poll by id
 async def get_poll_by_id(poll_id: str):
     prisma = Prisma()
     try:
@@ -57,6 +59,7 @@ async def get_poll_by_id(poll_id: str):
         await prisma.disconnect()
 
 
+# get poll by user id
 async def get_poll_by_user_id(user_id: str):
     prisma = Prisma()
     try:
@@ -72,6 +75,7 @@ async def get_poll_by_user_id(user_id: str):
     finally:
         await prisma.disconnect()
 
+# get all polls
 async def get_all_polls():
     prisma = Prisma()
     try:
@@ -82,3 +86,44 @@ async def get_all_polls():
         error_message = str(e)
         print(f"Database error: {error_message}")
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Internal server error: {error_message}")
+
+
+
+# vote on a poll
+async def vote_on_poll(poll_id: str, option_id: str, current_user: Dict[str, Any]):
+    prisma = Prisma()
+    try:
+        await prisma.connect()
+        created_vote = await prisma.vote.create(
+            data={
+                "userId": current_user["id"],
+                "optionId": option_id,
+                "pollId": poll_id,
+            }
+        )
+        return created_vote.model_dump()
+    except Exception as e:
+        error_message = str(e)
+        print(f"Database error: {error_message}")
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Internal server error: {error_message}")
+    finally:
+        await prisma.disconnect()
+
+# like a poll
+async def like_poll(poll_id: str, current_user: Dict[str, Any]):
+    prisma = Prisma()
+    try:
+        await prisma.connect()
+        created_like = await prisma.like.create(
+            data={
+                "userId": current_user["id"],
+                "pollId": poll_id,
+            }
+        )
+        return created_like.model_dump()
+    except Exception as e:
+        error_message = str(e)
+        print(f"Database error: {error_message}")
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Internal server error: {error_message}")
+    finally:
+        await prisma.disconnect()
