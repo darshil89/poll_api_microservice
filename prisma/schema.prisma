@@ -1,0 +1,49 @@
+datasource db {
+  provider = "mongodb"
+  url      = env("API_DATABASE_URL")
+  relationMode = "prisma"
+}
+
+generator client {
+  provider = "prisma-client-py"
+}
+
+model Poll {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  question  String
+  userId    String   @db.ObjectId
+  createdAt DateTime @default(now())
+  options   Option[]
+  votes     Vote[]
+  likes     Like[]
+}
+
+model Option {
+  id       String  @id @default(auto()) @map("_id") @db.ObjectId
+  text     String
+
+  pollId   String  @db.ObjectId
+  poll     Poll    @relation(fields: [pollId], references: [id])
+
+  vote     Vote?
+  voteId   String? @unique @db.ObjectId
+}
+
+model Vote {
+  id       String  @id @default(auto()) @map("_id") @db.ObjectId
+  userId   String  @db.ObjectId
+
+  option   Option? @relation(fields: [optionId], references: [id])
+  optionId String? @unique @db.ObjectId
+
+  pollId   String  @db.ObjectId
+  poll     Poll    @relation(fields: [pollId], references: [id])
+}
+
+model Like {
+  id     String @id @default(auto()) @map("_id") @db.ObjectId
+  userId String @db.ObjectId
+  
+  poll   Poll   @relation(fields: [pollId], references: [id])
+  pollId String @db.ObjectId
+}

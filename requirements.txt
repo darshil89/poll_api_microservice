@@ -1,0 +1,8 @@
+prisma 
+fastapi
+uvicorn
+python-dotenv
+bcrypt
+PyJWT
+pydantic
+python-multipart
