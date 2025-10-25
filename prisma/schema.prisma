@@ -26,7 +26,6 @@ model Option {
   poll     Poll    @relation(fields: [pollId], references: [id])
 
   vote     Vote?
-  voteId   String? @unique @db.ObjectId
 }
 
 model Vote {
