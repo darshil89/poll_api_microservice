@@ -45,8 +45,17 @@ async def get_poll_by_id(poll_id: str):
     prisma = Prisma()
     try:
         await prisma.connect()
+        # include options, votes, and likes
         poll = await prisma.poll.find_unique(
-            where={"id": poll_id}
+            where={"id": poll_id},
+            include={
+                "options": {
+                    "include": {
+                        "votes": True,
+                    }
+                },
+                "likes": True,
+            }
         )
         if not poll:
             raise HTTPException(status_code=404, detail="Poll not found")
@@ -65,7 +74,15 @@ async def get_poll_by_user_id(user_id: str):
     try:
         await prisma.connect()
         polls = await prisma.poll.find_many(
-            where={"userId": user_id}
+            where={"userId": user_id},
+            include={
+                "options": {
+                    "include": {
+                        "votes": True,
+                    }
+                },
+                "likes": True,
+            }
         )
         return [poll.model_dump() for poll in polls]
     except Exception as e:
@@ -80,7 +97,16 @@ async def get_all_polls():
     prisma = Prisma()
     try:
         await prisma.connect()
-        polls = await prisma.poll.find_many()
+        polls = await prisma.poll.find_many(
+            include={
+                "options": {
+                    "include": {
+                        "votes": True,
+                    }
+                },
+                "likes": True,
+            }
+        )
         return [poll.model_dump() for poll in polls]
     except Exception as e:
         error_message = str(e)
