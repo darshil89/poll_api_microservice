@@ -1,8 +1,9 @@
 from prisma import Prisma
 from fastapi import HTTPException, status
 from dotenv import load_dotenv
-from models.poll import Poll, Option, Vote, Like
-from typing import Dict, Any
+from models.poll import Poll
+from typing import Dict, Any, List
+from models.poll import PollResponse, VoteResponse, LikeResponse
 load_dotenv()
 
 
@@ -41,7 +42,7 @@ async def create_poll(poll: Poll, current_user: Dict[str, Any]):
 
 
 # get poll by id
-async def get_poll_by_id(poll_id: str):
+async def get_poll_by_id(poll_id: str) -> PollResponse:
     prisma = Prisma()
     try:
         await prisma.connect()
@@ -59,7 +60,7 @@ async def get_poll_by_id(poll_id: str):
         )
         if not poll:
             raise HTTPException(status_code=404, detail="Poll not found")
-        return poll.model_dump()
+        return PollResponse.model_dump(poll)
     except Exception as e:
         error_message = str(e)
         print(f"Database error: {error_message}")
@@ -69,7 +70,7 @@ async def get_poll_by_id(poll_id: str):
 
 
 # get poll by user id
-async def get_poll_by_user_id(user_id: str):
+async def get_poll_by_user_id(user_id: str) -> List[PollResponse]:
     prisma = Prisma()
     try:
         await prisma.connect()
@@ -84,7 +85,7 @@ async def get_poll_by_user_id(user_id: str):
                 "likes": True,
             }
         )
-        return [poll.model_dump() for poll in polls]
+        return [PollResponse.model_dump(poll) for poll in polls]
     except Exception as e:
         error_message = str(e)
         print(f"Database error: {error_message}")
@@ -93,7 +94,7 @@ async def get_poll_by_user_id(user_id: str):
         await prisma.disconnect()
 
 # get all polls
-async def get_all_polls():
+async def get_all_polls() -> List[PollResponse]:
     prisma = Prisma()
     try:
         await prisma.connect()
@@ -107,7 +108,7 @@ async def get_all_polls():
                 "likes": True,
             }
         )
-        return [poll.model_dump() for poll in polls]
+        return [PollResponse.model_dump(poll) for poll in polls]
     except Exception as e:
         error_message = str(e)
         print(f"Database error: {error_message}")
@@ -116,10 +117,16 @@ async def get_all_polls():
 
 
 # vote on a poll
-async def vote_on_poll(poll_id: str, option_id: str, current_user: Dict[str, Any]):
+async def vote_on_poll(poll_id: str, option_id: str, current_user: Dict[str, Any]) -> VoteResponse:
     prisma = Prisma()
     try:
         await prisma.connect()
+        # check if user has already voted on the poll
+        existing_vote = await prisma.vote.find_first(
+            where={"userId": current_user["id"], "optionId": option_id, "pollId": poll_id}
+        )
+        if existing_vote:
+            raise HTTPException(status_code=400, detail="User has already voted on this poll")
         created_vote = await prisma.vote.create(
             data={
                 "userId": current_user["id"],
@@ -127,7 +134,7 @@ async def vote_on_poll(poll_id: str, option_id: str, current_user: Dict[str, Any
                 "pollId": poll_id,
             }
         )
-        return created_vote.model_dump()
+        return VoteResponse.model_dump(created_vote)
     except Exception as e:
         error_message = str(e)
         print(f"Database error: {error_message}")
@@ -136,17 +143,23 @@ async def vote_on_poll(poll_id: str, option_id: str, current_user: Dict[str, Any
         await prisma.disconnect()
 
 # like a poll
-async def like_poll(poll_id: str, current_user: Dict[str, Any]):
+async def like_poll(poll_id: str, current_user: Dict[str, Any]) -> LikeResponse:
     prisma = Prisma()
     try:
         await prisma.connect()
+        # check if user has already liked the poll
+        existing_like = await prisma.like.find_first(
+            where={"userId": current_user["id"], "pollId": poll_id}
+        )
+        if existing_like:
+            raise HTTPException(status_code=400, detail="User has already liked this poll")
         created_like = await prisma.like.create(
             data={
                 "userId": current_user["id"],
                 "pollId": poll_id,
             }
         )
-        return created_like.model_dump()
+        return LikeResponse.model_dump(created_like)
     except Exception as e:
         error_message = str(e)
         print(f"Database error: {error_message}")
