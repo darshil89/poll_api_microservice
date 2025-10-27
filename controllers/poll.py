@@ -2,9 +2,10 @@ from prisma import Prisma
 from fastapi import HTTPException, status
 from dotenv import load_dotenv
 from models.poll import Poll
+import json
 from typing import Dict, Any, List
 from models.poll import PollResponse, VoteResponse, LikeResponse
-from helpers.db import prisma_client
+from helpers.db import prisma_client, redis_client
 load_dotenv()
 
 
@@ -120,6 +121,22 @@ async def vote_on_poll(poll_id: str, option_id: str, current_user: Dict[str, Any
                 "pollId": poll_id,
             }
         )
+
+        # Redis increment vote count
+        redis_key = f"poll:{poll_id}:option:{option_id}"
+        new_vote_count = await redis_client.incr(redis_key)
+        if new_vote_count is None:
+            raise HTTPException(status_code=500, detail="Failed to increment vote count")
+
+        message = {
+            "poll_id": poll_id,
+            "option_id": option_id,
+            "vote_count": new_vote_count,
+        }
+
+        # sending the message to the message queue
+        await redis_client.publish("poll-updates", json.dumps(message))
+
         return VoteResponse.model_dump(created_vote)
     except Exception as e:
         error_message = str(e)
@@ -141,6 +158,22 @@ async def like_poll(poll_id: str, current_user: Dict[str, Any]) -> LikeResponse:
                 "pollId": poll_id,
             }
         )
+
+        # Redis increment like count
+        redis_key = f"poll:{poll_id}:likes"
+        new_like_count = await redis_client.incr(redis_key)
+        if new_like_count is None:
+            raise HTTPException(status_code=500, detail="Failed to increment like count")
+
+        message = {
+            "poll_id": poll_id,
+            "type": "like",
+            "like_count": new_like_count,
+        }
+
+        # sending the message to the message queue
+        await redis_client.publish("poll-updates", json.dumps(message))
+
         return LikeResponse.model_dump(created_like)
     except Exception as e:
         error_message = str(e)
