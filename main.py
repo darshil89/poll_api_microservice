@@ -1,13 +1,23 @@
-from fastapi import FastAPI, Depends
+from fastapi import FastAPI, Depends, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
 import os
 import uvicorn
+from contextlib import asynccontextmanager
 from router.poll import router as poll_router
-from helpers.db import check_db_connection
+from helpers.db import check_db_connection, disconnect_db
 load_dotenv()
 
-app = FastAPI()
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    db = await check_db_connection()
+    if not db:
+        raise HTTPException(status_code=500, detail="Database connection failed")
+    yield
+    await disconnect_db()
+
+app = FastAPI(lifespan=lifespan)
 
 # Add CORS middleware
 app.add_middleware(

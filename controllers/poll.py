@@ -4,15 +4,14 @@ from dotenv import load_dotenv
 from models.poll import Poll
 from typing import Dict, Any, List
 from models.poll import PollResponse, VoteResponse, LikeResponse
+from helpers.db import prisma_client
 load_dotenv()
 
 
 # create poll
 async def create_poll(poll: Poll, current_user: Dict[str, Any]):
-    prisma = Prisma()
     try:
-        await prisma.connect()
-        created_poll = await prisma.poll.create(
+        created_poll = await prisma_client.poll.create(
             data= {
                 "question": poll.question,
                 "userId": current_user["id"],
@@ -22,7 +21,7 @@ async def create_poll(poll: Poll, current_user: Dict[str, Any]):
         # Create options if they exist
         if hasattr(poll, 'options') and poll.options:
             for option in poll.options:
-                await prisma.option.create(
+                await prisma_client.option.create(
                     data={
                         "text": option.text,
                         "pollId": created_poll.id,
@@ -37,17 +36,13 @@ async def create_poll(poll: Poll, current_user: Dict[str, Any]):
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Internal server error: {error_message}"
         )
-    finally:
-        await prisma.disconnect()
 
 
 # get poll by id
 async def get_poll_by_id(poll_id: str) -> PollResponse:
-    prisma = Prisma()
     try:
-        await prisma.connect()
         # include options, votes, and likes
-        poll = await prisma.poll.find_unique(
+        poll = await prisma_client.poll.find_unique(
             where={"id": poll_id},
             include={
                 "options": {
@@ -65,16 +60,12 @@ async def get_poll_by_id(poll_id: str) -> PollResponse:
         error_message = str(e)
         print(f"Database error: {error_message}")
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Internal server error: {error_message}")
-    finally:
-        await prisma.disconnect()
 
 
 # get poll by user id
 async def get_poll_by_user_id(user_id: str) -> List[PollResponse]:
-    prisma = Prisma()
     try:
-        await prisma.connect()
-        polls = await prisma.poll.find_many(
+        polls = await prisma_client.poll.find_many(
             where={"userId": user_id},
             include={
                 "options": {
@@ -90,15 +81,12 @@ async def get_poll_by_user_id(user_id: str) -> List[PollResponse]:
         error_message = str(e)
         print(f"Database error: {error_message}")
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Internal server error: {error_message}")
-    finally:
-        await prisma.disconnect()
+
 
 # get all polls
 async def get_all_polls() -> List[PollResponse]:
-    prisma = Prisma()
     try:
-        await prisma.connect()
-        polls = await prisma.poll.find_many(
+        polls = await prisma_client.poll.find_many(
             include={
                 "options": {
                     "include": {
@@ -118,16 +106,14 @@ async def get_all_polls() -> List[PollResponse]:
 
 # vote on a poll
 async def vote_on_poll(poll_id: str, option_id: str, current_user: Dict[str, Any]) -> VoteResponse:
-    prisma = Prisma()
     try:
-        await prisma.connect()
         # check if user has already voted on the poll
-        existing_vote = await prisma.vote.find_first(
+        existing_vote = await prisma_client.vote.find_first(
             where={"userId": current_user["id"], "optionId": option_id, "pollId": poll_id}
         )
         if existing_vote:
             raise HTTPException(status_code=400, detail="User has already voted on this poll")
-        created_vote = await prisma.vote.create(
+        created_vote = await prisma_client.vote.create(
             data={
                 "userId": current_user["id"],
                 "optionId": option_id,
@@ -139,21 +125,17 @@ async def vote_on_poll(poll_id: str, option_id: str, current_user: Dict[str, Any
         error_message = str(e)
         print(f"Database error: {error_message}")
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Internal server error: {error_message}")
-    finally:
-        await prisma.disconnect()
 
 # like a poll
 async def like_poll(poll_id: str, current_user: Dict[str, Any]) -> LikeResponse:
-    prisma = Prisma()
     try:
-        await prisma.connect()
         # check if user has already liked the poll
-        existing_like = await prisma.like.find_first(
+        existing_like = await prisma_client.like.find_first(
             where={"userId": current_user["id"], "pollId": poll_id}
         )
         if existing_like:
             raise HTTPException(status_code=400, detail="User has already liked this poll")
-        created_like = await prisma.like.create(
+        created_like = await prisma_client.like.create(
             data={
                 "userId": current_user["id"],
                 "pollId": poll_id,
@@ -164,5 +146,3 @@ async def like_poll(poll_id: str, current_user: Dict[str, Any]) -> LikeResponse:
         error_message = str(e)
         print(f"Database error: {error_message}")
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Internal server error: {error_message}")
-    finally:
-        await prisma.disconnect()
