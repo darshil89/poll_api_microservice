@@ -35,7 +35,7 @@ async def redis_listener_task(sio: socketio.AsyncServer):
                 if data.get("type") == "like":
                     print(f"Broadcasting 'like-update': {data}")
                     await sio.emit('like-update', data)
-                elif data.get("optionId"):
+                else:
                     print(f"Broadcasting 'vote-update': {data}")
                     await sio.emit('vote-update', data)
                     
