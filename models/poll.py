@@ -1,70 +1,51 @@
 from pydantic import BaseModel
 from datetime import datetime
-from typing import Optional, List
-
-
-
+from typing import Optional, List, Dict
 
 class Option(BaseModel):
-    id: Optional[str] = None
+    id: str
     text: str
-    pollId: Optional[str] = None
+    pollId: str
+
+    class Config:
+        from_attributes = True
 
 class Vote(BaseModel):
     id: Optional[str] = None
     userId: str
     optionId: str
     pollId: str
+    
+    class Config:
+        from_attributes = True
 
 class Like(BaseModel):
     id: Optional[str] = None
     userId: str
     pollId: str
+    
+    class Config:
+        from_attributes = True
 
+
+class OptionCreate(BaseModel):
+    text: str
 
 class PollCreate(BaseModel):
     question: str
-    userId: str
-    options: Optional[List[Option]] = None
-    votes: Optional[List[Vote]] = None
-    likes: Optional[List[Like]] = None
+    options: List[OptionCreate]
 
-
-class Poll(BaseModel):
-    id: Optional[str] = None
-    question: str
-    options: Optional[List[Option]] = None
-    votes: Optional[List[Vote]] = None
-    likes: Optional[List[Like]] = None
-    createdAt: Optional[datetime] = None
-
-
-class VoteResponse(BaseModel): 
-    id: Optional[str] = None
-    userId: str
-    option: Optional[Option] = None
-    optionId: str
-    pollId: str
-    poll: Optional[Poll] = None
-
-
-class OptionResponse(BaseModel):
-    id: Optional[str] = None
-    text: str
-    pollId: Optional[str] = None
-    poll: Optional[Poll] = None
-    votes: Optional[List[VoteResponse]] = None
-
-class LikeResponse(BaseModel):
-    id: Optional[str] = None
-    userId: str
-    pollId: str
-    poll: Optional[Poll] = None
 
 class PollResponse(BaseModel):
-    id: Optional[str] = None
+    id: str
     question: str
     userId: str
     createdAt: datetime
-    options: Optional[List[OptionResponse]] = None
-    likes: Optional[List[LikeResponse]] = None
+    options: List[Option]
+
+    counts: Dict[str, int]
+    userHasVoted: Optional[str]
+    userHasLiked: bool
+
+    class Config:
+        from_attributes = True

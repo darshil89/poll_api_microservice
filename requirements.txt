@@ -7,3 +7,4 @@ PyJWT
 pydantic
 python-multipart
 redis
+python-socketio

@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException
 from controllers.poll import create_poll, get_poll_by_id, get_poll_by_user_id, get_all_polls, vote_on_poll, like_poll
-from models.poll import Poll, Option, Vote, Like
+from models.poll import PollCreate, PollResponse
 from helpers.auth_middleware import get_current_user
 from typing import Dict, Any
 
@@ -9,7 +9,7 @@ router = APIRouter()
 url_prefix = "/api/poll"
 
 @router.post(f"{url_prefix}/create-poll")
-async def create_poll_route(poll: Poll, current_user: Dict[str, Any] = Depends(get_current_user)):
+async def create_poll_route(poll: PollCreate, current_user: Dict[str, Any] = Depends(get_current_user)):
     try:
         return await create_poll(poll, current_user)
     except HTTPException as e:
@@ -20,7 +20,7 @@ async def create_poll_route(poll: Poll, current_user: Dict[str, Any] = Depends(g
 @router.get(f"{url_prefix}/get-poll-by-id/{{poll_id}}") 
 async def get_poll_by_id_route(poll_id: str, current_user: Dict[str, Any] = Depends(get_current_user)):
     try:
-        return await get_poll_by_id(poll_id)
+        return await get_poll_by_id(poll_id, current_user["id"])
     except HTTPException as e:
         raise e
     except Exception as e:
@@ -41,7 +41,7 @@ async def get_poll_by_user_id_route(user_id: str, current_user: Dict[str, Any] =
 @router.get(f"{url_prefix}/get-all-polls")
 async def get_all_polls_route(current_user: Dict[str, Any] = Depends(get_current_user)):
     try:
-        return await get_all_polls()
+        return await get_all_polls(current_user["id"])
     except HTTPException as e:
         raise e
     except Exception as e:
