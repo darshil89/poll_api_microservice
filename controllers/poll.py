@@ -93,15 +93,57 @@ async def get_poll_by_user_id(user_id: str) -> List[PollResponse]:
         polls = await prisma_client.poll.find_many(
             where={"userId": user_id},
             include={
-                "options": {
-                    "include": {
-                        "votes": True,
-                    }
-                },
-                "likes": True,
+                "options": True
             }
         )
-        return [PollResponse.model_dump(poll) for poll in polls]
+
+        all_redis_keys = []
+        poll_key_map = {} 
+        
+        for poll in polls:
+            poll_keys = [f"poll:{poll.id}:likes"]
+            poll_key_map[poll.id] = {"like_key": poll_keys[0], "option_keys": []}
+            
+            for option in poll.options:
+                opt_key = f"poll:{poll.id}:option:{option.id}"
+                poll_keys.append(opt_key)
+                poll_key_map[poll.id]["option_keys"].append((option.id, opt_key))
+                
+            all_redis_keys.extend(poll_keys)
+
+        all_counts = await redis_client.mget(all_redis_keys)
+        counts_dict = dict(zip(all_redis_keys, all_counts))
+
+        response_list = []
+        for poll in polls:
+            final_counts = {}
+            key_map = poll_key_map[poll.id]
+            
+            # Get like count
+            final_counts["likes"] = int(counts_dict.get(key_map["like_key"]) or 0)
+            
+            # Get option counts
+            for option_id, opt_key in key_map["option_keys"]:
+                final_counts[option_id] = int(counts_dict.get(opt_key) or 0)
+
+            # user specific counts
+            user_votes = await prisma_client.vote.find_many(where={"userId": user_id})
+            user_likes = await prisma_client.like.find_many(where={"userId": user_id})
+
+            user_voted_poll_ids = {v.pollId: v.optionId for v in user_votes}
+            user_liked_poll_ids = {l.pollId for l in user_likes}
+
+            
+            poll_dict = poll.model_dump()
+            poll_dict["counts"] = final_counts
+
+            poll_dict["userHasVoted"] = user_voted_poll_ids.get(poll.id, None)
+            poll_dict["userHasLiked"] = poll.id in user_liked_poll_ids
+
+            response_list.append(PollResponse(**poll_dict))
+            
+        return response_list
+
     except Exception as e:
         error_message = str(e)
         print(f"Database error: {error_message}")
