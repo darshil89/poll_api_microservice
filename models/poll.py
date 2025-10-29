@@ -34,12 +34,14 @@ class OptionCreate(BaseModel):
 class PollCreate(BaseModel):
     question: str
     options: List[OptionCreate]
+    email: str
 
 
 class PollResponse(BaseModel):
     id: str
     question: str
     userId: str
+    email: Optional[str] = None
     createdAt: datetime
     options: List[Option]
 

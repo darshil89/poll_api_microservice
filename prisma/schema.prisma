@@ -12,6 +12,7 @@ model Poll {
   id        String   @id @default(auto()) @map("_id") @db.ObjectId
   question  String
   userId    String   @db.ObjectId
+  email     String   @unique
   createdAt DateTime @default(now())
 
   options Option[]

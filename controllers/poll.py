@@ -15,6 +15,7 @@ async def create_poll(poll: PollCreate, current_user: Dict[str, Any]):
             data= {
                 "question": poll.question,
                 "userId": current_user["id"],
+                "email": current_user["email"],
             }
         )
 
@@ -203,6 +204,7 @@ async def get_all_polls(user_id: str) -> List[PollResponse]:
             poll_dict["userHasVoted"] = user_voted_poll_ids.get(poll.id, None)
             poll_dict["userHasLiked"] = poll.id in user_liked_poll_ids
 
+            poll_dict["email"] = poll.email
             response_list.append(PollResponse(**poll_dict))
             
         return response_list
